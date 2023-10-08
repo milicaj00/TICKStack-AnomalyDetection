@@ -1,0 +1,80 @@
+var db = 'Coins'
+
+var rp = 'autogen'
+
+var groupBy = []
+
+var whereFilter = lambda: ("amount" > 0)
+
+var name = 'ETC'
+
+var idVar = name
+
+var message = ' ETC value is  {{.Level}}  {{ index .Fields "value" }}  {{.Time}}'
+
+var idTag = 'alertID'
+
+var levelTag = 'level'
+
+var messageField = 'message'
+
+var durationField = 'duration'
+
+var outputDB = 'chronograf'
+
+var outputRP = 'autogen'
+
+var outputMeasurement = 'alerts'
+
+var triggerType = 'threshold'
+
+// var crit = 0.01
+
+// Which measurement to consume
+var measurement = 'sell'
+
+// Optional where filter
+var where_filter = lambda: TRUE
+
+// Optional list of group by dimensions
+var groups = [*]
+
+// Which field to process
+var field = 'amount'
+
+// Warning criteria, has access to 'mean' field
+var warn = lambda: TRUE
+
+// Critical criteria, has access to 'mean' field
+var crit = lambda: TRUE
+
+// How much data to window
+var window = 5m
+
+// The slack channel for alerts
+var slack_channel = '#diplomski'
+
+stream
+    |from()
+        .measurement(measurement)
+        .where(where_filter)
+        .groupBy(groups)
+    |window()
+        .period(window)
+        .every(window)
+    |mean('amount')
+    |alert()
+        .warn(warn)
+        .crit(crit)
+        .slack()
+        .channel(slack_channel)
+    |eval(lambda: float("value"))
+        .as('value')
+        .keep()
+    |influxDBOut()
+        .create()
+        .database(outputDB)
+        .retentionPolicy(outputRP)
+        .measurement(outputMeasurement)
+        .tag('alertName', name)
+        .tag('triggerType', triggerType)
